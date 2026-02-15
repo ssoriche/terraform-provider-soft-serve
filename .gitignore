@@ -1,0 +1,21 @@
+# Binaries
+terraform-provider-soft-serve
+dist/
+
+# OS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+
+# Go
+vendor/
