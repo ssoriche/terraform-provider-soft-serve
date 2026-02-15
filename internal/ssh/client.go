@@ -29,6 +29,7 @@ type ClientConfig struct {
 	PrivateKey     string // PEM-encoded private key contents
 	PrivateKeyPath string // Path to private key file
 	UseAgent       bool
+	IdentityFile   string // Path to public key file to filter agent keys
 }
 
 // NewClient creates a new SSH client for Soft Serve.
@@ -65,7 +66,16 @@ func NewClient(cfg ClientConfig) (*Client, error) {
 			conn, err := net.Dial("unix", socket)
 			if err == nil {
 				c.agentConn = conn
-				c.agentAuth = ssh.PublicKeysCallback(agent.NewClient(conn).Signers)
+				agentClient := agent.NewClient(conn)
+				if cfg.IdentityFile != "" {
+					c.agentAuth, err = filteredAgentAuth(agentClient, cfg.IdentityFile)
+					if err != nil {
+						conn.Close()
+						return nil, fmt.Errorf("filtering agent keys with identity file: %w", err)
+					}
+				} else {
+					c.agentAuth = ssh.PublicKeysCallback(agentClient.Signers)
+				}
 			}
 		}
 	}
@@ -83,6 +93,34 @@ func (c *Client) Close() error {
 		return c.agentConn.Close()
 	}
 	return nil
+}
+
+// filteredAgentAuth reads a public key from identityFile and returns an
+// AuthMethod that only offers the matching key from the SSH agent. This
+// mirrors OpenSSH's IdentityFile behavior when used with an agent.
+func filteredAgentAuth(agentClient agent.ExtendedAgent, identityFile string) (ssh.AuthMethod, error) {
+	pubKeyData, err := os.ReadFile(identityFile)
+	if err != nil {
+		return nil, fmt.Errorf("reading identity file %s: %w", identityFile, err)
+	}
+	wantKey, _, _, _, err := ssh.ParseAuthorizedKey(pubKeyData)
+	if err != nil {
+		return nil, fmt.Errorf("parsing public key from %s: %w", identityFile, err)
+	}
+	wantBytes := wantKey.Marshal()
+
+	return ssh.PublicKeysCallback(func() ([]ssh.Signer, error) {
+		signers, err := agentClient.Signers()
+		if err != nil {
+			return nil, err
+		}
+		for _, s := range signers {
+			if bytes.Equal(s.PublicKey().Marshal(), wantBytes) {
+				return []ssh.Signer{s}, nil
+			}
+		}
+		return nil, fmt.Errorf("identity file %s: matching key not found in SSH agent", identityFile)
+	}), nil
 }
 
 // Run executes a command on the Soft Serve server and returns stdout.
