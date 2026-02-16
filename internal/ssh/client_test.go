@@ -7,13 +7,7 @@ import (
 
 func TestNewClient_NoAuthMethod(t *testing.T) {
 	// Ensure SSH agent is unavailable
-	origSock := os.Getenv("SSH_AUTH_SOCK")
-	os.Unsetenv("SSH_AUTH_SOCK")
-	t.Cleanup(func() {
-		if origSock != "" {
-			os.Setenv("SSH_AUTH_SOCK", origSock)
-		}
-	})
+	t.Setenv("SSH_AUTH_SOCK", "")
 
 	_, err := NewClient(ClientConfig{
 		Host:     "localhost",
@@ -59,12 +53,14 @@ func TestNewClient_InvalidPrivateKeyFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.Remove(tmpFile.Name())
+	t.Cleanup(func() { _ = os.Remove(tmpFile.Name()) })
 
 	if _, err := tmpFile.WriteString("not-a-valid-key"); err != nil {
 		t.Fatal(err)
 	}
-	tmpFile.Close()
+	if err := tmpFile.Close(); err != nil {
+		t.Fatal(err)
+	}
 
 	_, err = NewClient(ClientConfig{
 		Host:           "localhost",
@@ -108,12 +104,14 @@ func TestNewClient_InvalidIdentityFileContent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.Remove(tmpFile.Name())
+	t.Cleanup(func() { _ = os.Remove(tmpFile.Name()) })
 
 	if _, err := tmpFile.WriteString("not-a-valid-public-key"); err != nil {
 		t.Fatal(err)
 	}
-	tmpFile.Close()
+	if err := tmpFile.Close(); err != nil {
+		t.Fatal(err)
+	}
 
 	_, err = NewClient(ClientConfig{
 		Host:         "localhost",
