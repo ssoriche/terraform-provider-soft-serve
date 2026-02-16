@@ -125,8 +125,9 @@ func TestRepositoryResourceDescription(t *testing.T) {
 
 func TestRepositoryResourceImplementsInterfaces(t *testing.T) {
 	r := NewRepositoryResource()
-	var _ resource.Resource = r
-	var _ resource.ResourceWithImportState = r.(resource.ResourceWithImportState)
+	if _, ok := r.(resource.ResourceWithImportState); !ok {
+		t.Error("RepositoryResource should implement ResourceWithImportState")
+	}
 }
 
 func TestRepositoryResourceConfigure_NilProviderData(t *testing.T) {
@@ -253,8 +254,9 @@ func TestUserResourceSchemaPublicKeysIsSet(t *testing.T) {
 
 func TestUserResourceImplementsInterfaces(t *testing.T) {
 	r := NewUserResource()
-	var _ resource.Resource = r
-	var _ resource.ResourceWithImportState = r.(resource.ResourceWithImportState)
+	if _, ok := r.(resource.ResourceWithImportState); !ok {
+		t.Error("UserResource should implement ResourceWithImportState")
+	}
 }
 
 func TestUserResourceConfigure_NilProviderData(t *testing.T) {
@@ -392,8 +394,9 @@ func TestRepositoryCollaboratorResourceSchemaAccessLevelValidators(t *testing.T)
 
 func TestRepositoryCollaboratorResourceImplementsInterfaces(t *testing.T) {
 	r := NewRepositoryCollaboratorResource()
-	var _ resource.Resource = r
-	var _ resource.ResourceWithImportState = r.(resource.ResourceWithImportState)
+	if _, ok := r.(resource.ResourceWithImportState); !ok {
+		t.Error("RepositoryCollaboratorResource should implement ResourceWithImportState")
+	}
 }
 
 func TestRepositoryCollaboratorResourceConfigure_NilProviderData(t *testing.T) {
@@ -519,8 +522,9 @@ func TestServerSettingsResourceDeleteIsNoop(t *testing.T) {
 
 func TestServerSettingsResourceImplementsInterfaces(t *testing.T) {
 	r := NewServerSettingsResource()
-	var _ resource.Resource = r
-	var _ resource.ResourceWithImportState = r.(resource.ResourceWithImportState)
+	if _, ok := r.(resource.ResourceWithImportState); !ok {
+		t.Error("ServerSettingsResource should implement ResourceWithImportState")
+	}
 }
 
 func TestServerSettingsResourceConfigure_NilProviderData(t *testing.T) {

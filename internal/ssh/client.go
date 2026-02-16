@@ -70,7 +70,7 @@ func NewClient(cfg ClientConfig) (*Client, error) {
 				if cfg.IdentityFile != "" {
 					c.agentAuth, err = filteredAgentAuth(agentClient, cfg.IdentityFile)
 					if err != nil {
-						conn.Close()
+						_ = conn.Close()
 						return nil, fmt.Errorf("filtering agent keys with identity file: %w", err)
 					}
 				} else {
@@ -144,13 +144,13 @@ func (c *Client) Run(command string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("connecting to %s: %w", addr, err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	session, err := conn.NewSession()
 	if err != nil {
 		return "", fmt.Errorf("creating session: %w", err)
 	}
-	defer session.Close()
+	defer func() { _ = session.Close() }()
 
 	var stdout, stderr bytes.Buffer
 	session.Stdout = &stdout
