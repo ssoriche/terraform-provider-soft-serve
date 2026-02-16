@@ -1,33 +1,62 @@
+# GoReleaser configuration for Terraform Provider
+# Builds multi-platform binaries for Terraform Registry publication
+
 version: 2
 
+before:
+  hooks:
+    # Ensure dependencies are tidy
+    - go mod tidy
+    # Format and lint code
+    - go fmt ./...
+
 builds:
-  - env:
+  - id: terraform-provider-soft-serve
+    binary: terraform-provider-soft-serve_v{{ .Version }}
+    main: .
+    env:
       - CGO_ENABLED=0
-    mod_timestamp: "{{ .CommitTimestamp }}"
+    mod_timestamp: '{{ .CommitTimestamp }}'
     flags:
       - -trimpath
     ldflags:
-      - "-s -w -X main.version={{.Version}}"
+      - -s -w -X main.version={{ .Version }} -X main.commit={{ .Commit }}
     goos:
-      - linux
       - darwin
+      - freebsd
+      - linux
       - windows
     goarch:
+      - '386'
       - amd64
+      - arm
       - arm64
-    binary: "{{ .ProjectName }}_v{{ .Version }}"
+    ignore:
+      # Exclude invalid OS/arch combinations
+      - goos: darwin
+        goarch: '386'
+      - goos: darwin
+        goarch: arm
+      - goos: freebsd
+        goarch: arm64
 
 archives:
-  - format: zip
-    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+  - id: terraform-provider-soft-serve
+    format: zip
+    name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+    files:
+      - LICENSE
+      - README.md
 
 checksum:
-  name_template: "{{ .ProjectName }}_{{ .Version }}_SHA256SUMS"
+  name_template: '{{ .ProjectName }}_{{ .Version }}_SHA256SUMS'
   algorithm: sha256
 
 signs:
   - artifacts: checksum
     args:
+      # Use local GPG key for signing
+      # Configure GPG_FINGERPRINT in GitHub secrets for CI
       - "--batch"
       - "--local-user"
       - "{{ .Env.GPG_FINGERPRINT }}"
@@ -37,11 +66,65 @@ signs:
       - "${artifact}"
 
 release:
-  draft: true
+  draft: false
+  replace_existing_draft: true
+  prerelease: auto
+  make_latest: true
+  mode: replace
+  header: |
+    ## terraform-provider-soft-serve {{ .Tag }}
+
+    **Release Date:** {{ .Date }}
+
+    For usage instructions, see the [README](https://github.com/ssoriche/terraform-provider-soft-serve#readme).
+  footer: |
+    ## Installation
+
+    This release is published to the [Terraform Registry](https://registry.terraform.io/providers/ssoriche/soft-serve).
+
+    To use this provider:
+
+    ```hcl
+    terraform {
+      required_providers {
+        softserve = {
+          source  = "ssoriche/soft-serve"
+          version = "~> {{ .Major }}.{{ .Minor }}"
+        }
+      }
+    }
+    ```
+
+    ## Checksums
+
+    All release artifacts are checksummed and GPG-signed for verification.
 
 changelog:
+  use: github
   sort: asc
+  abbrev: 7
+  groups:
+    - title: 'Features'
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: 'Bug Fixes'
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: 'Documentation'
+      regexp: '^.*?docs(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: 'Dependency Updates'
+      regexp: '^.*?(feat|fix|chore)\(deps?\)!?:.+$'
+      order: 3
+    - title: 'Other'
+      order: 999
   filters:
     exclude:
-      - "^docs:"
-      - "^test:"
+      - '^test:'
+      - '^chore:'
+      - '^ci:'
+
+# Terraform Registry manifest
+# This is required for provider publication
+metadata:
+  mod_timestamp: '{{ .CommitTimestamp }}'

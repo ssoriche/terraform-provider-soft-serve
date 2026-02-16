@@ -1,21 +1,64 @@
 # Binaries
 terraform-provider-soft-serve
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Build
+bin/
+build/
 dist/
 
-# OS
-.DS_Store
+# Go
+vendor/
+*.test
+*.out
+coverage.txt
+go.work
+go.work.sum
+
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+*.tfvars.json
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# GoReleaser
+.goreleaser/
+
+# Examples
+examples/**/.terraform/
+examples/**/*.tfstate
+examples/**/*.tfstate.*
 
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
+*~
 
-# Terraform
-.terraform/
-*.tfstate
-*.tfstate.*
-*.tfplan
+# OS
+.DS_Store
 
-# Go
-vendor/
+# devbox
+.devbox/
+devbox.lock
+
+# Environment
+.env
+.env.local
+*.local
